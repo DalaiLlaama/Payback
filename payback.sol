@@ -18,6 +18,7 @@ contract PayItBack {
 	event OwnershipConfirmed();
 	event PaidOut(uint _amount);
 	event Warning(string _message);
+	event Disabled();
 
     modifier ownerOnly() {
         require(msg.sender == creator, 
@@ -50,7 +51,7 @@ contract PayItBack {
     }
 
     modifier wontOverflow() {
-        require(address(this).balance + msg.value > address(this).balance);
+        require(totalContributions + msg.value > totalContributions);
 
         _;
     }
@@ -65,6 +66,7 @@ contract PayItBack {
     }
 
     function contribute() public payable enabled wontOverflow {
+        // Hold time starts with first contribution
         // Don't allow subsequent contributions to reset the expiry
         if (contributionTime == 0 && msg.value > 0) {
             contributionTime = now;
@@ -80,7 +82,7 @@ contract PayItBack {
         uint payment = address(this).balance;
         totalContributions -= payment;
         if (totalContributions != 0) {
-            // log something
+            // something has gone wrong
             emit Warning("Balance is unexpectedly non-zero after payment");
         }
         contributionTime = 0; // Reset expiry
@@ -88,7 +90,7 @@ contract PayItBack {
         creator.transfer(payment);
     }
 
-    function verifyOwnership() public view  ownerOnly returns(bool) {
+    function verifyOwnership() public ownerOnly returns(bool) {
         emit OwnershipConfirmed();
 
         return true;
@@ -98,9 +100,18 @@ contract PayItBack {
     // further contributions
     function disable() public ownerOnly nilBalance enabled {
         isDisabled = true;
+        
+        emit Disabled();
     }
     
     function expiryTime() public view returns(uint) {
         return contributionTime + HOLD_TIME;
+    }
+    
+    function daysMinutesTilExpiryTime() public view returns(uint, uint) {
+        uint secsLeft = (contributionTime + HOLD_TIME - now);
+        uint daysLeft = secsLeft / 1 days;
+        uint minsLeft = (secsLeft % 1 days) / 1 minutes;
+        return (daysLeft, minsLeft);
     }
 }
