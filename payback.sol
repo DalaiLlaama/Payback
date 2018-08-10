@@ -7,7 +7,7 @@ pragma solidity ^0.4.24;
  */
 contract PayItBack {
 
-    uint constant HOLD_TIME = 30 minutes; // 31 days;
+    uint constant HOLD_TIME = 31 days;
 
     address public creator;
     uint public contributionTime = 0;
